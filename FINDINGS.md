@@ -22,3 +22,13 @@
 
 **Why:** Reject bad input at the edge; don’t spend model calls on incomplete submissions.
 
+## 3. Evals always reviewed the same silent fixture
+
+**Found:** `resolveExpenseSubmission` fell back to `POC_REQUEST_FILE` / `fixtures/request.json`, so every eval hit the same submission.
+
+**Confirmed:** `approve-valid` + `policy-citation` both ignored other fixtures; concurrency made env overrides unsafe.
+
+**Fixed:** Removed the fallback. Dataset `evals/data/cases.yaml` fans out one eval per fixture; each case loads its JSON and passes `clientContext.expense_submission`.
+
+**Why:** Explicit per-case fixtures; no silent cross-case contamination.
+

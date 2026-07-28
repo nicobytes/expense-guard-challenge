@@ -1,28 +1,23 @@
-// Per-request context for a review: the expense submission plus a few trace-identity
-// fields. In production a channel maps the POST body onto the session; in dev / eval it
-// loads a representative submission from a fixture (override with POC_REQUEST_FILE).
+// Per-request context for a review: the expense submission plus trace-identity fields.
+// HTTP review maps a validated body onto channel state -> metadata. Evals pass the
+// submission explicitly via clientContext (no silent fixture default).
 import { readFileSync } from "node:fs";
-import { join } from "node:path";
 import { defineState } from "eve/context";
-import {
-  type tExpenseLineItem,
-  type tExpenseSubmission,
-} from "./expense.schema.js";
+import { ExpenseSubmissionSchema, type tExpenseLineItem, type tExpenseSubmission } from "./expense.schema.js";
 
 export type { tExpenseLineItem, tExpenseSubmission };
 
 // The per-session projection carried by channel state -> metadata(state). `contextProvided`
-// tells "bare request, use fixture" apart from "a body was sent but did not survive the
-// projection".
+// means a validated submission reached the channel; without it, resolve throws.
 export type tRequestView = {
   request: tExpenseSubmission | null;
   contextProvided: boolean;
 };
 
-const FIXTURE_PATH = process.env.POC_REQUEST_FILE ?? join(process.cwd(), "fixtures", "request.json");
-
-export function loadExpenseFixture(): tExpenseSubmission {
-  return JSON.parse(readFileSync(FIXTURE_PATH, "utf8")) as tExpenseSubmission;
+/** Load and Zod-parse a fixture from an explicit path (relative to cwd or absolute). */
+export function loadExpenseFixture(path: string): tExpenseSubmission {
+  const raw: unknown = JSON.parse(readFileSync(path, "utf8"));
+  return ExpenseSubmissionSchema.parse(raw);
 }
 
 export function isPlainObject(v: unknown): v is Record<string, unknown> {
@@ -33,36 +28,36 @@ export function isNonEmptyObject(v: unknown): v is Record<string, unknown> {
   return isPlainObject(v) && Object.keys(v).length > 0;
 }
 
-// WRITE side — the channel builds the state to seed from the parsed body. A bare body
-// (missing/empty/non-object) -> fixture path (contextProvided:false). A non-empty object
-// body IS the submission (contextProvided:true). Callers that accept untrusted HTTP bodies
-// should Zod-validate with ExpenseSubmissionSchema before treating the body as a submission.
-export function buildRequestView(body: unknown): tRequestView {
-  if (isNonEmptyObject(body)) {
-    return { request: body as tExpenseSubmission, contextProvided: true };
-  }
-  return { request: null, contextProvided: false };
+// WRITE side — review channel builds state from a validated body.
+export function buildRequestView(submission: tExpenseSubmission): tRequestView {
+  return { request: submission, contextProvided: true };
 }
 
-// READ side — loud fallback: a body was provided but did not reach the resolver via the
-// metadata projection -> throw (fail the turn). Silently rendering the fixture would
-// review another company's submission. Bare / eval requests -> fixture.
+// READ side — require channel metadata. No POC_REQUEST_FILE / fixture fallback.
 export function resolveExpenseSubmission(
   view: { request?: unknown; contextProvided?: unknown } | undefined,
 ): tExpenseSubmission {
   if (view?.contextProvided === true) {
-    if (isPlainObject(view.request)) return view.request as tExpenseSubmission;
+    if (isPlainObject(view.request)) return ExpenseSubmissionSchema.parse(view.request);
     throw new Error(
       "Per-request expense context was provided but did not reach the resolver via channel " +
-        "metadata/state. Refusing to fall back to the fixture — that would review another " +
-        "company's submission.",
+        "metadata/state.",
     );
   }
-  return loadExpenseFixture();
+  throw new Error(
+    "No expense submission in channel metadata. " +
+      "HTTP review must send a validated body; evals must pass clientContext.expense_submission.",
+  );
 }
 
-// The authoritative submission for this turn, seeded by the instructions resolver so
-// tools can read the real fields instead of relying on model-provided arguments.
+/** True when channel metadata carries a submission (review HTTP path). */
+export function hasChannelSubmission(
+  view: { request?: unknown; contextProvided?: unknown } | undefined,
+): boolean {
+  return view?.contextProvided === true && isPlainObject(view.request);
+}
+
+// The authoritative submission for this turn when provided via channel metadata.
 export const submissionState = defineState<tExpenseSubmission | null>(
   "expense-guard.submission",
   () => null,

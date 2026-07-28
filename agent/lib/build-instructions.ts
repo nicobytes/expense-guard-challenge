@@ -55,15 +55,31 @@ function renderSubmission(submission: tExpenseSubmission, now: Date): string {
   return block;
 }
 
-// function oldRender(submission: tExpenseSubmission) {
-//   return "Review this: " + submission.company_id + " " + submission.category;
-// }
+function clientContextHint(now: Date): string {
+  let block = "";
+  block = block + "Current date: " + now.toISOString() + "\n";
+  block = block + "The expense submission for this turn is in client context under\n";
+  block = block + "`expense_submission` (company_id, category, claimed_amount, receipt, etc.).\n";
+  block = block + "Use that object as the only submission under review — do not invent fields.\n";
+  return block;
+}
 
+/** System prompt when channel metadata carries the submission (HTTP review). */
 export function buildSystemPrompt(submission: tExpenseSubmission, now: Date): string {
-  const volatile = renderSubmission(submission, now);
   let prompt = "";
-  prompt = prompt + volatile;
+  prompt = prompt + renderSubmission(submission, now);
   prompt = prompt + "\n\n";
+  prompt = prompt + header();
+  prompt = prompt + steps();
+  prompt = prompt + rubric();
+  return prompt;
+}
+
+/** System prompt for Eve session / evals: submission arrives via clientContext. */
+export function buildClientContextSystemPrompt(now: Date): string {
+  let prompt = "";
+  prompt = prompt + clientContextHint(now);
+  prompt = prompt + "\n";
   prompt = prompt + header();
   prompt = prompt + steps();
   prompt = prompt + rubric();

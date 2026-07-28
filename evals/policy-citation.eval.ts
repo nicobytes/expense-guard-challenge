@@ -1,35 +1,41 @@
-// Reference eval (behavioral, judge). The decision cites a concrete company policy rule
-// rather than a vague or invented justification. Runs on the default fixture.
+// Dataset-driven citation evals: one case per fixture; judge checks cited_rule quality.
 import { defineEval } from "eve/evals";
+import { loadYaml } from "eve/evals/loaders";
 import { ExpenseDecisionSchema } from "../agent/lib/expense.schema.js";
-import { loadExpenseFixture } from "../agent/lib/request-context.js";
+import { loadCaseSubmission, type EvalCase } from "./shared.js";
 
-export default defineEval({
-  description: "The decision cites a concrete, real company policy rule.",
-  tags: ["expense-guard", "happy-path"],
-  async test(t) {
-    const submission = loadExpenseFixture();
+const doc = (await loadYaml("evals/data/cases.yaml")) as { evals: EvalCase[] };
+const rows = doc.evals;
 
-    const turn = await t.send({
-      message: "Review the expense submission and return your decision.",
-      outputSchema: ExpenseDecisionSchema,
-    });
+export default rows.map((row) =>
+  defineEval({
+    description: `Policy citation — ${row.description}`,
+    tags: ["expense-guard", "citation", row.id],
+    async test(t) {
+      const submission = loadCaseSubmission(row.fixture);
 
-    t.didNotFail();
+      const turn = await t.send({
+        message: "Review the expense submission and return your decision.",
+        clientContext: { expense_submission: submission },
+        outputSchema: ExpenseDecisionSchema,
+      });
 
-    const parsed = ExpenseDecisionSchema.safeParse(turn.data);
-    const rendered = parsed.success
-      ? `Decision: ${parsed.data.decision}\nReason: ${parsed.data.reason}\nCited rule: ${parsed.data.cited_rule}`
-      : JSON.stringify(turn.data, null, 2);
+      t.didNotFail();
 
-    await t.judge.autoevals
-      .closedQA(
-        `This is an automated expense-review decision for company "${submission.company_id}". ` +
-          'Does the "Cited rule" field reference a specific, concrete company expense policy rule ' +
-          "(a rule id or a clearly-stated policy limit) rather than a vague, generic, or invented " +
-          "justification? Be tolerant of formatting.",
-        { on: rendered },
-      )
-      .soft(0.6);
-  },
-});
+      const parsed = ExpenseDecisionSchema.safeParse(turn.data);
+      const rendered = parsed.success
+        ? `Decision: ${parsed.data.decision}\nReason: ${parsed.data.reason}\nCited rule: ${parsed.data.cited_rule}`
+        : JSON.stringify(turn.data, null, 2);
+
+      await t.judge.autoevals
+        .closedQA(
+          `This is an automated expense-review decision for company "${submission.company_id}". ` +
+            'Does the "Cited rule" field reference a specific, concrete company expense policy rule ' +
+            "(a rule id or a clearly-stated policy limit) rather than a vague, generic, or invented " +
+            "justification? Be tolerant of formatting.",
+          { on: rendered },
+        )
+        .soft(0.6);
+    },
+  }),
+);

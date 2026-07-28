@@ -1,0 +1,17 @@
+evals:
+  - id: valid
+    fixture: fixtures/valid.json
+    description: Within-policy Acme meal is approved
+    expect_decision: approve
+  - id: ambiguous
+    fixture: fixtures/ambiguous.json
+    description: Over-limit Acme software is flagged for review
+    expect_decision: flag_for_review
+  - id: illegible
+    fixture: fixtures/illegible.json
+    description: Illegible Globex travel receipt is flagged for review
+    expect_decision: flag_for_review
+  - id: cross-company
+    fixture: fixtures/cross-company.json
+    description: Within-policy Initech meal is approved against Initech rules
+    expect_decision: approve

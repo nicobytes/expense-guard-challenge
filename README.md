@@ -46,9 +46,9 @@ bunx eve dev       # run it locally (HTTP channel: POST /eve/v1/review)
 bunx eve eval      # run the eval suite (evals/*.eval.ts)
 ```
 
-`fixtures/*.json` are sample submissions — pass one via the `POC_REQUEST_FILE` env var (see
-`.env.example`) to drive `eve dev` / `eve eval` against a specific case, or POST your own JSON body
-to `/eve/v1/review` once `eve dev` is running.
+`fixtures/*.json` are sample submissions. Drive a specific case with
+`just review fixtures/<name>.json`, or POST JSON to `/eve/v1/review` once `eve dev` is running.
+Evals load fixtures from `evals/data/cases.yaml` (one case per fixture via `clientContext`).
 
 **macOS note:** the sandbox backend is pinned to `justbash` (`agent/sandbox.ts`) — Eve's default
 backend probe hangs forever on macOS trying to prewarm a VM backend that isn't installed. This is

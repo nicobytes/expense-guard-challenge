@@ -1,16 +1,29 @@
-// Dynamic instructions resolver. Runs at turn open, resolves the submission from the
-// channel metadata (or the fixture in dev / eval), seeds it into submissionState so
-// tools can read the authoritative fields, and renders the system prompt.
+// Dynamic instructions resolver. Runs at turn open. Review HTTP seeds the submission
+// via channel metadata; evals/Eve session pass it via clientContext.expense_submission
+// (no silent fixture fallback).
 import { defineDynamic, defineInstructions } from "eve/instructions";
-import { buildSystemPrompt } from "../lib/build-instructions.js";
-import { resolveExpenseSubmission, submissionState } from "../lib/request-context.js";
+import {
+  buildClientContextSystemPrompt,
+  buildSystemPrompt,
+} from "../lib/build-instructions.js";
+import {
+  hasChannelSubmission,
+  resolveExpenseSubmission,
+  submissionState,
+} from "../lib/request-context.js";
 
 export default defineDynamic({
   events: {
     "turn.started": async (_event, ctx) => {
-      const submission = resolveExpenseSubmission(ctx.channel.metadata);
-      submissionState.update(() => submission);
-      return defineInstructions({ markdown: buildSystemPrompt(submission, new Date()) });
+      const meta = ctx.channel.metadata;
+      if (hasChannelSubmission(meta)) {
+        const submission = resolveExpenseSubmission(meta);
+        submissionState.update(() => submission);
+        return defineInstructions({ markdown: buildSystemPrompt(submission, new Date()) });
+      }
+
+      submissionState.update(() => null);
+      return defineInstructions({ markdown: buildClientContextSystemPrompt(new Date()) });
     },
   },
 });

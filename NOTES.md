@@ -42,13 +42,13 @@ expense-guard-challenge/
 flowchart TD
   subgraph Entry["Entrada"]
     A["POST /eve/v1/review<br/>channels/review.ts"] --> B{"Body válido<br/>y no vacío?"}
-    B -->|Sí| C["buildRequestView<br/>contextProvided: true"]
-    B -->|No / vacío| D["contextProvided: false<br/>→ fixture POC_REQUEST_FILE"]
-    E["eve eval vía<br/>channels/eve.ts<br/>POST /eve/v1/session"] --> D
+    B -->|Sí| C["Zod + buildRequestView<br/>contextProvided: true"]
+    B -->|No / vacío| Bad400["400 empty/invalid body"]
+    E["eve eval<br/>clientContext.expense_submission"] --> F
   end
 
   C --> F["send message + outputSchema<br/>+ state en session"]
-  D --> F
+  Bad400 --> Stop["sin modelo"]
 
   subgraph Turn["Turn del agente"]
     F --> G["turn.started<br/>instructions/system.ts"]
@@ -129,7 +129,7 @@ sequenceDiagram
 
 **Fixtures:** `valid`/`request` (Acme meals $96 → approve); `ambiguous` (SaaS $450 → flag); `cross-company` (Initech); `illegible` (recibo ilegible → flag).
 
-**Evals:** approve + citation (judge Haiku); ambos sobre el fixture default.
+**Evals:** dataset `evals/data/cases.yaml` → decision + citation fan-out (one case per fixture).
 
 ---
 
@@ -148,8 +148,8 @@ sequenceDiagram
 ```bash
 bun install && cp .env.example .env   # AI_GATEWAY_API_KEY
 bunx eve build && bunx eve dev        # POST /eve/v1/review
-bunx eve eval
-# POC_REQUEST_FILE=fixtures/ambiguous.json
+bunx eve eval                         # dataset: evals/data/cases.yaml
+just review fixtures/valid.json
 ```
 
 ## Entregables del challenge

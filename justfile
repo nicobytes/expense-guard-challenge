@@ -2,7 +2,7 @@
 set dotenv-load := true
 
 host := env("EVE_HOST", "http://127.0.0.1:2000")
-fixture := env("POC_REQUEST_FILE", "fixtures/ambiguous.json")
+fixture := "fixtures/ambiguous.json"
 
 # Install dependencies
 install:

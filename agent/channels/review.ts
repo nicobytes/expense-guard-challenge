@@ -1,15 +1,11 @@
 // Custom review channel (id: review). POST /eve/v1/review runs one structured
 // review turn and returns the decision. Per-request context flows body ->
 // channel state -> metadata(state) -> instructions resolver (ctx.channel.metadata).
-// A bare body falls back to the fixture. Non-empty bodies are Zod-validated before send().
+// Bodies must be a complete expense submission (Zod); empty/invalid → 400.
 import { z } from "zod";
 import { defineChannel, POST, type Session, type SendPayload } from "eve/channels";
 import { ExpenseDecisionSchema, ExpenseSubmissionSchema } from "../lib/expense.schema.js";
-import {
-  buildRequestView,
-  isNonEmptyObject,
-  type tRequestView,
-} from "../lib/request-context.js";
+import { buildRequestView, isNonEmptyObject, type tRequestView } from "../lib/request-context.js";
 
 type tJsonOutputSchema = NonNullable<SendPayload["outputSchema"]>;
 
@@ -67,20 +63,22 @@ export default defineChannel<tRequestView | undefined, { state: tRequestView | u
         return Response.json({ ok: false, error: "Invalid JSON body." }, { status: 400 });
       }
 
-      let view: tRequestView;
-      if (isNonEmptyObject(body)) {
-        const parsed = ExpenseSubmissionSchema.safeParse(body);
-        if (!parsed.success) {
-          return Response.json(
-            { ok: false, error: "Invalid expense submission.", issues: parsed.error.issues },
-            { status: 400 },
-          );
-        }
-        view = { request: parsed.data, contextProvided: true };
-      } else {
-        view = buildRequestView(body);
+      if (!isNonEmptyObject(body)) {
+        return Response.json(
+          { ok: false, error: "Empty body. Send a complete expense submission JSON object." },
+          { status: 400 },
+        );
       }
 
+      const parsed = ExpenseSubmissionSchema.safeParse(body);
+      if (!parsed.success) {
+        return Response.json(
+          { ok: false, error: "Invalid expense submission.", issues: parsed.error.issues },
+          { status: 400 },
+        );
+      }
+
+      const view = buildRequestView(parsed.data);
       const session = await send(
         { message: "Review the expense submission and return your decision.", outputSchema },
         { auth: null, continuationToken: `eve:${crypto.randomUUID()}`, state: view },

@@ -1,7 +1,5 @@
-// Run-wide eval configuration for Expense Guard. `eve eval` boots one agent process that
-// reads its submission from a single fixture (POC_REQUEST_FILE, default
-// fixtures/request.json). The judge model scores t.judge.* assertions only; it never runs
-// the agent under test.
+// Run-wide eval configuration for Expense Guard. Each eval case loads its own
+// fixture explicitly (evals/data/cases.yaml) and passes it via clientContext.
 import { defineEvalConfig } from "eve/evals";
 
 export default defineEvalConfig({
