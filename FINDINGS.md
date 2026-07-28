@@ -42,3 +42,13 @@
 
 **Why:** Multi-tenant isolation; never apply another company’s rules by accident.
 
+## 5. validate_expense ignored line_items totals
+
+**Found:** The tool only checked that core fields were present; `claimed_amount` was never compared to `line_items` (e.g. illegible fixture: claim 1280 vs line 45 → still `valid: true`).
+
+**Confirmed:** Vitest `tests/validate-expense.test.ts` failed until the sum check existed.
+
+**Fixed:** Rewrote validation with Zod; `claimed_amount` must equal `sum(line_items)` (0 when items are missing/empty). Tool `inputSchema` accepts optional `line_items`.
+
+**Why:** Catch total mismatches in the tool, not only in the model’s judgment.
+

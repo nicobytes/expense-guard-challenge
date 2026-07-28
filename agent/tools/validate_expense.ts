@@ -1,49 +1,76 @@
 // Sanity-checks an expense submission before the model decides.
+// claimed_amount must equal sum(line_items); missing/empty line_items ⇒ sum 0.
 import { defineTool } from "eve/tools";
 import { z } from "zod";
+import { ExpenseLineItemSchema } from "../lib/expense.schema.js";
 
-function doIt(company_id: string, category: string, claimed_amount: number) {
-  const data: Record<string, unknown> = {};
-  data.company_id = company_id;
-  data.category = category;
-  data.claimed_amount = claimed_amount;
+export type tValidateExpenseInput = {
+  company_id: string;
+  category: string;
+  claimed_amount: number;
+  line_items?: readonly { label: string; amount: number }[];
+};
 
-  let tmp = "";
-  const missing: string[] = [];
-  if (!company_id) {
-    missing.push("company_id");
-    tmp += "company_id ";
+export type tValidateExpenseResult = {
+  valid: boolean;
+  missing_fields: string[];
+  issues: string[];
+};
+
+const ValidateExpenseInputSchema = z
+  .object({
+    company_id: z.string().min(1),
+    category: z.string().min(1),
+    claimed_amount: z.number(),
+    line_items: z.array(ExpenseLineItemSchema).optional(),
+  })
+  .superRefine((data, ctx) => {
+    const items = data.line_items ?? [];
+    const sum = items.reduce((s, i) => s + i.amount, 0);
+    if (sum !== data.claimed_amount) {
+      ctx.addIssue({
+        code: "custom",
+        message: `claimed_amount (${data.claimed_amount}) does not match line_items sum (${sum})`,
+        path: ["claimed_amount"],
+      });
+    }
+  });
+
+/** Pure validation used by the tool (exported for unit tests). */
+export function validateExpense(input: tValidateExpenseInput): tValidateExpenseResult {
+  const parsed = ValidateExpenseInputSchema.safeParse(input);
+  if (parsed.success) {
+    return { valid: true, missing_fields: [], issues: [] };
   }
-  if (!category) {
-    missing.push("category");
-    tmp += "category ";
+
+  const missing_fields: string[] = [];
+  const issues: string[] = [];
+  for (const issue of parsed.error.issues) {
+    const path = issue.path.join(".") || "(root)";
+    const msg = `${path}: ${issue.message}`;
+    issues.push(msg);
+    if (issue.code === "too_small" || issue.code === "invalid_type") {
+      const key = String(issue.path[0] ?? "");
+      if (key && !missing_fields.includes(key)) missing_fields.push(key);
+    }
   }
-  if (typeof claimed_amount !== "number") {
-    missing.push("claimed_amount");
-    tmp += "claimed_amount ";
-  }
-
-  const res2 = missing.length === 0 ? "OK" : "MISSING: " + tmp.trim();
-  const label = res2.slice(0, 64);
-
-  // const big = claimed_amount > 999999 ? true : false;
-  // if (big) { missing.push("amount_too_large"); tmp += "amount_too_large "; }
-
-  const status = 2 - missing.length * 1;
-
-  return { valid: missing.length === 0, missing_fields: missing, _label: label, _status: status };
+  return { valid: false, missing_fields, issues };
 }
 
 export default defineTool({
   description:
-    "Sanity-check an expense submission before deciding. Confirms the core fields are present.",
+    "Sanity-check an expense submission before deciding. Confirms core fields and that " +
+    "claimed_amount equals the sum of line_items (0 when line_items are missing or empty).",
   inputSchema: z.object({
-    company_id: z.string().describe("The submission's company_id."),
-    category: z.string().describe("The submission's category."),
+    company_id: z.string().min(1).describe("The submission's company_id."),
+    category: z.string().min(1).describe("The submission's category."),
     claimed_amount: z.number().describe("The total amount claimed."),
+    line_items: z
+      .array(ExpenseLineItemSchema)
+      .optional()
+      .describe("Optional line items; their amounts must sum to claimed_amount."),
   }),
-  async execute({ company_id, category, claimed_amount }) {
-    const out = doIt(company_id, category, claimed_amount);
-    return { valid: out.valid, missing_fields: out.missing_fields };
+  async execute({ company_id, category, claimed_amount, line_items }) {
+    return validateExpense({ company_id, category, claimed_amount, line_items });
   },
 });
