@@ -4,23 +4,12 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { defineState } from "eve/context";
+import {
+  type tExpenseLineItem,
+  type tExpenseSubmission,
+} from "./expense.schema.js";
 
-export type tExpenseLineItem = {
-  label: string;
-  amount: number;
-};
-
-export type tExpenseSubmission = {
-  company_id: string;
-  category: string;
-  claimed_amount: number;
-  currency?: string;
-  receipt: string;
-  line_items?: tExpenseLineItem[];
-  workspace_id?: string;
-  chat_id?: string;
-  label?: string;
-};
+export type { tExpenseLineItem, tExpenseSubmission };
 
 // The per-session projection carried by channel state -> metadata(state). `contextProvided`
 // tells "bare request, use fixture" apart from "a body was sent but did not survive the
@@ -36,15 +25,20 @@ export function loadExpenseFixture(): tExpenseSubmission {
   return JSON.parse(readFileSync(FIXTURE_PATH, "utf8")) as tExpenseSubmission;
 }
 
-function isPlainObject(v: unknown): v is Record<string, unknown> {
+export function isPlainObject(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null && !Array.isArray(v);
+}
+
+export function isNonEmptyObject(v: unknown): v is Record<string, unknown> {
+  return isPlainObject(v) && Object.keys(v).length > 0;
 }
 
 // WRITE side — the channel builds the state to seed from the parsed body. A bare body
 // (missing/empty/non-object) -> fixture path (contextProvided:false). A non-empty object
-// body IS the submission (contextProvided:true).
+// body IS the submission (contextProvided:true). Callers that accept untrusted HTTP bodies
+// should Zod-validate with ExpenseSubmissionSchema before treating the body as a submission.
 export function buildRequestView(body: unknown): tRequestView {
-  if (isPlainObject(body) && Object.keys(body).length > 0) {
+  if (isNonEmptyObject(body)) {
     return { request: body as tExpenseSubmission, contextProvided: true };
   }
   return { request: null, contextProvided: false };

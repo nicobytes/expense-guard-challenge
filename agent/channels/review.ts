@@ -1,11 +1,15 @@
 // Custom review channel (id: review). POST /eve/v1/review runs one structured
 // review turn and returns the decision. Per-request context flows body ->
 // channel state -> metadata(state) -> instructions resolver (ctx.channel.metadata).
-// A bare body falls back to the fixture.
+// A bare body falls back to the fixture. Non-empty bodies are Zod-validated before send().
 import { z } from "zod";
 import { defineChannel, POST, type Session, type SendPayload } from "eve/channels";
-import { ExpenseDecisionSchema } from "../lib/expense.schema.js";
-import { buildRequestView, type tRequestView } from "../lib/request-context.js";
+import { ExpenseDecisionSchema, ExpenseSubmissionSchema } from "../lib/expense.schema.js";
+import {
+  buildRequestView,
+  isNonEmptyObject,
+  type tRequestView,
+} from "../lib/request-context.js";
 
 type tJsonOutputSchema = NonNullable<SendPayload["outputSchema"]>;
 
@@ -63,7 +67,20 @@ export default defineChannel<tRequestView | undefined, { state: tRequestView | u
         return Response.json({ ok: false, error: "Invalid JSON body." }, { status: 400 });
       }
 
-      const view = buildRequestView(body);
+      let view: tRequestView;
+      if (isNonEmptyObject(body)) {
+        const parsed = ExpenseSubmissionSchema.safeParse(body);
+        if (!parsed.success) {
+          return Response.json(
+            { ok: false, error: "Invalid expense submission.", issues: parsed.error.issues },
+            { status: 400 },
+          );
+        }
+        view = { request: parsed.data, contextProvided: true };
+      } else {
+        view = buildRequestView(body);
+      }
+
       const session = await send(
         { message: "Review the expense submission and return your decision.", outputSchema },
         { auth: null, continuationToken: `eve:${crypto.randomUUID()}`, state: view },
@@ -74,15 +91,15 @@ export default defineChannel<tRequestView | undefined, { state: tRequestView | u
         return Response.json({ ok: false, error: `turn failed: ${failure}` }, { status: 502 });
       }
 
-      const parsed = ExpenseDecisionSchema.safeParse(result);
-      if (!parsed.success) {
+      const decision = ExpenseDecisionSchema.safeParse(result);
+      if (!decision.success) {
         return Response.json(
           { ok: false, error: "Agent output did not match the decision schema." },
           { status: 502 },
         );
       }
 
-      return Response.json({ ok: true, data: parsed.data }, { status: 200 });
+      return Response.json({ ok: true, data: decision.data }, { status: 200 });
     }),
   ],
 });

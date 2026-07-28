@@ -22,6 +22,10 @@ evals:
 
 alias eval := evals
 
+# Deterministic Vitest suite (schema + HTTP 400 when just dev is up)
+test:
+    bun run test
+
 # POST a review using a fixture file (default: fixtures/ambiguous.json)
 # Usage:
 #   just review

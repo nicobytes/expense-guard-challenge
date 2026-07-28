@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "eve dev",
     "build": "eve build",
-    "eval": "eve eval"
+    "eval": "eve eval",
+    "test": "vitest run"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.85",
@@ -15,6 +16,9 @@
   },
   "devDependencies": {
     "@types/node": "^26.0.0",
-    "typescript": "^6.0.3"
+    "@types/supertest": "^6.0.3",
+    "supertest": "^7.1.4",
+    "typescript": "^6.0.3",
+    "vitest": "^3.2.4"
   }
 }

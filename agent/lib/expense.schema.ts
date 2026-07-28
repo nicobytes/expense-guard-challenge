@@ -1,6 +1,25 @@
-// The structured decision Expense Guard emits (agent-level outputSchema, also attached
-// per message by the channel and evals).
+// Zod schemas for expense submissions (request) and review decisions (agent output).
 import { z } from "zod";
+
+export const ExpenseLineItemSchema = z.object({
+  label: z.string().min(1),
+  amount: z.number().finite(),
+});
+
+export const ExpenseSubmissionSchema = z.object({
+  company_id: z.string().min(1),
+  category: z.string().min(1),
+  claimed_amount: z.number().finite(),
+  receipt: z.string().min(1),
+  currency: z.string().min(1).optional(),
+  line_items: z.array(ExpenseLineItemSchema).optional(),
+  workspace_id: z.string().optional(),
+  chat_id: z.string().optional(),
+  label: z.string().optional(),
+});
+
+export type tExpenseLineItem = z.infer<typeof ExpenseLineItemSchema>;
+export type tExpenseSubmission = z.infer<typeof ExpenseSubmissionSchema>;
 
 export const DECISIONS = ["approve", "flag_for_review", "reject"] as const;
 
