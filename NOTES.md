@@ -13,7 +13,8 @@ expense-guard-challenge/
 ├── agent/
 │   ├── agent.ts              # defineAgent + modelo + outputSchema
 │   ├── sandbox.ts            # justbash (workaround macOS)
-│   ├── channels/eve.ts       # POST /eve/v1/review
+│   ├── channels/eve.ts       # default session API (/eve/v1/session*)
+│   ├── channels/review.ts    # POST /eve/v1/review (one-shot)
 │   ├── instructions/system.ts
 │   ├── hooks/usage-log.ts
 │   ├── lib/                  # schema, policies, context, prompt
@@ -40,10 +41,10 @@ expense-guard-challenge/
 ```mermaid
 flowchart TD
   subgraph Entry["Entrada"]
-    A["POST /eve/v1/review<br/>JSON body"] --> B{"Body válido<br/>y no vacío?"}
+    A["POST /eve/v1/review<br/>channels/review.ts"] --> B{"Body válido<br/>y no vacío?"}
     B -->|Sí| C["buildRequestView<br/>contextProvided: true"]
     B -->|No / vacío| D["contextProvided: false<br/>→ fixture POC_REQUEST_FILE"]
-    E["eve eval / eve dev<br/>sin body"] --> D
+    E["eve eval vía<br/>channels/eve.ts<br/>POST /eve/v1/session"] --> D
   end
 
   C --> F["send message + outputSchema<br/>+ state en session"]
@@ -83,7 +84,7 @@ flowchart TD
 ```mermaid
 sequenceDiagram
   participant Client
-  participant Channel as channels/eve.ts
+  participant Channel as channels/review.ts
   participant Eve as Eve runtime
   participant Instr as instructions/system.ts
   participant State as submissionState
@@ -114,7 +115,8 @@ sequenceDiagram
 | Pieza | Rol |
 |--------|-----|
 | `agent.ts` | Modelo fijo Opus + `ExpenseDecisionSchema` |
-| `channels/eve.ts` | HTTP, state→metadata, drain stream, validación final |
+| `channels/eve.ts` | Session API default (`/eve/v1/session*`) para evals/TUI/SDK |
+| `channels/review.ts` | One-shot review: state→metadata, drain stream, validación final |
 | `request-context.ts` | Fixture vs body; `submissionState` para tools |
 | `build-instructions.ts` | Prompt: submission primero, luego rol/pasos/rúbrica |
 | `policies.ts` | 3 tenants: acme, globex, initech |
