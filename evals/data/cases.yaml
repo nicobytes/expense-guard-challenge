@@ -13,5 +13,5 @@ evals:
     expect_decision: flag_for_review
   - id: cross-company
     fixture: fixtures/cross-company.json
-    description: Within-policy Initech meal is approved against Initech rules
-    expect_decision: approve
+    description: Initech meal over per-attendee limit with inferred headcount is flagged
+    expect_decision: flag_for_review

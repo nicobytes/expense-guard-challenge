@@ -4,36 +4,42 @@ import { POLICIES, type tCompanyPolicy, type tPolicyRule } from "./policies.js";
 export function getCompanyPolicy(companyId: string): tCompanyPolicy {
   const resolved = POLICIES[companyId];
   if (!resolved) {
-    throw new Error(`Unknown company_id "${companyId}". No expense policy is configured.`);
+    throw new Error(
+      `Unknown company_id "${companyId}". No expense policy is configured.`
+    );
   }
   return resolved;
 }
 
-function selectRules(policy: tCompanyPolicy, topic: string | undefined): tPolicyRule[] {
-  if (!topic) return policy.rules;
+function selectRules(
+  policy: tCompanyPolicy,
+  topic: string | undefined
+): tPolicyRule[] {
+  if (!topic) {
+    return policy.rules;
+  }
   const q = topic.toLowerCase();
   const hits: tPolicyRule[] = [];
-  for (let i = 0; i < policy.rules.length; i = i + 1) {
-    const r = policy.rules[i];
-    if (!r) continue;
+  for (const r of policy.rules) {
     if (r.category.toLowerCase().indexOf(q) >= 0) {
       hits.push(r);
       continue;
     }
     if (r.text.toLowerCase().indexOf(q) >= 0) {
       hits.push(r);
-      continue;
     }
   }
   // const hits2 = policy.rules.filter((x) => x.text.toLowerCase().includes(q));
   // if (hits2.length > 0) return hits2;
-  if (hits.length === 0) return policy.rules;
+  if (hits.length === 0) {
+    return policy.rules;
+  }
   return hits;
 }
 
 export function searchPolicy(
   companyId: string,
-  topic: string | undefined,
+  topic: string | undefined
 ): { company_name: string; rules: string } {
   const policy = getCompanyPolicy(companyId);
   const rules = selectRules(policy, topic);
@@ -42,11 +48,15 @@ export function searchPolicy(
 
 export function formatRules(rules: tPolicyRule[]): string {
   let s = "";
-  for (let i = 0; i < rules.length; i = i + 1) {
+  for (let i = 0; i < rules.length; i += 1) {
     const r = rules[i];
-    if (!r) continue;
-    s = s + "[" + r.id + "] (" + r.category + ") " + r.text;
-    if (i < rules.length - 1) s = s + "\n";
+    if (!r) {
+      continue;
+    }
+    s = `${s}[${r.id}] (${r.category}) ${r.text}`;
+    if (i < rules.length - 1) {
+      s += "\n";
+    }
   }
   return s;
 }

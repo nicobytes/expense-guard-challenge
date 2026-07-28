@@ -1,0 +1,22 @@
+{
+  "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
+  "extends": ["ultracite/biome/core", "ultracite/biome/vitest"],
+  "files": {
+    "includes": [
+      "!!**/node_modules",
+      "!!**/.output",
+      "!!**/.eve",
+      "!!**/.workflow-data",
+      "!!**/bun.lock",
+      "!!**/.cursor",
+      "!!**/images"
+    ]
+  },
+  "linter": {
+    "rules": {
+      "style": {
+        "useFilenamingConvention": "off"
+      }
+    }
+  }
+}

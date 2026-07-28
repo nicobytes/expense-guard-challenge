@@ -26,6 +26,14 @@ alias eval := evals
 test:
     bun run test
 
+# Lint with Ultracite / Biome
+lint:
+    bun run lint
+
+# Autofix lint + format with Ultracite / Biome
+format:
+    bun run format
+
 # POST a review using a fixture file (default: fixtures/ambiguous.json)
 # Usage:
 #   just review

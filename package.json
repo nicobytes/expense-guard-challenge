@@ -6,7 +6,11 @@
     "dev": "eve dev",
     "build": "eve build",
     "eval": "eve eval",
-    "test": "vitest run"
+    "test": "vitest run",
+    "lint": "ultracite check",
+    "format": "ultracite fix",
+    "check": "ultracite check",
+    "fix": "ultracite fix"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.85",
@@ -15,10 +19,12 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@biomejs/biome": "2.5.3",
     "@types/node": "^26.0.0",
     "@types/supertest": "^6.0.3",
     "supertest": "^7.1.4",
     "typescript": "^6.0.3",
+    "ultracite": "7.9.4",
     "vitest": "^3.2.4"
   }
 }

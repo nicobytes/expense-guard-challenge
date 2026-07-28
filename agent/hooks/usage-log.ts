@@ -7,8 +7,12 @@ import { defineHook } from "eve/hooks";
 export default defineHook({
   events: {
     "step.completed"(event) {
-      const usage = (event.data as { usage?: Record<string, number> } | undefined)?.usage;
-      if (usage) console.info("[expense-guard] step usage", usage);
+      const usage = (
+        event.data as { usage?: Record<string, number> } | undefined
+      )?.usage;
+      if (usage) {
+        console.info("[expense-guard] step usage", usage);
+      }
     },
   },
 });

@@ -2,7 +2,7 @@
 import { defineEval } from "eve/evals";
 import { loadYaml } from "eve/evals/loaders";
 import { ExpenseDecisionSchema } from "../agent/lib/expense.schema.js";
-import { loadCaseSubmission, type EvalCase } from "./shared.js";
+import { type EvalCase, loadCaseSubmission } from "./shared.js";
 
 const doc = (await loadYaml("evals/data/cases.yaml")) as { evals: EvalCase[] };
 const rows = doc.evals;
@@ -15,8 +15,8 @@ export default rows.map((row) =>
       const submission = loadCaseSubmission(row.fixture);
 
       const turn = await t.send({
-        message: "Review the expense submission and return your decision.",
         clientContext: { expense_submission: submission },
+        message: "Review the expense submission and return your decision.",
         outputSchema: ExpenseDecisionSchema,
       });
 
@@ -33,9 +33,9 @@ export default rows.map((row) =>
             'Does the "Cited rule" field reference a specific, concrete company expense policy rule ' +
             "(a rule id or a clearly-stated policy limit) rather than a vague, generic, or invented " +
             "justification? Be tolerant of formatting.",
-          { on: rendered },
+          { on: rendered }
         )
         .soft(0.6);
     },
-  }),
+  })
 );

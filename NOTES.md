@@ -150,6 +150,8 @@ bun install && cp .env.example .env   # AI_GATEWAY_API_KEY
 bunx eve build && bunx eve dev        # POST /eve/v1/review
 bunx eve eval                         # dataset: evals/data/cases.yaml
 just review fixtures/valid.json
+just lint                             # Ultracite / Biome (bun run lint)
+just format                           # autofix + format (bun run format)
 ```
 
 ## Entregables del challenge

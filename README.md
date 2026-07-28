@@ -44,6 +44,9 @@ cp .env.example .env
 bunx eve build     # build the agent
 bunx eve dev       # run it locally (HTTP channel: POST /eve/v1/review)
 bunx eve eval      # run the eval suite (evals/*.eval.ts)
+
+bun run lint       # Ultracite / Biome check (also: just lint)
+bun run format     # autofix + format (also: just format)
 ```
 
 `fixtures/*.json` are sample submissions. Drive a specific case with

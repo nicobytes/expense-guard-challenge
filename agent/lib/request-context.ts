@@ -3,16 +3,20 @@
 // submission explicitly via clientContext (no silent fixture default).
 import { readFileSync } from "node:fs";
 import { defineState } from "eve/context";
-import { ExpenseSubmissionSchema, type tExpenseLineItem, type tExpenseSubmission } from "./expense.schema.js";
+import type { tExpenseSubmission } from "./expense.schema.js";
+import { ExpenseSubmissionSchema } from "./expense.schema.js";
 
-export type { tExpenseLineItem, tExpenseSubmission };
+export type {
+  tExpenseLineItem,
+  tExpenseSubmission,
+} from "./expense.schema.js";
 
 // The per-session projection carried by channel state -> metadata(state). `contextProvided`
 // means a validated submission reached the channel; without it, resolve throws.
-export type tRequestView = {
-  request: tExpenseSubmission | null;
+export interface tRequestView {
   contextProvided: boolean;
-};
+  request: tExpenseSubmission | null;
+}
 
 /** Load and Zod-parse a fixture from an explicit path (relative to cwd or absolute). */
 export function loadExpenseFixture(path: string): tExpenseSubmission {
@@ -30,29 +34,31 @@ export function isNonEmptyObject(v: unknown): v is Record<string, unknown> {
 
 // WRITE side — review channel builds state from a validated body.
 export function buildRequestView(submission: tExpenseSubmission): tRequestView {
-  return { request: submission, contextProvided: true };
+  return { contextProvided: true, request: submission };
 }
 
 // READ side — require channel metadata. No POC_REQUEST_FILE / fixture fallback.
 export function resolveExpenseSubmission(
-  view: { request?: unknown; contextProvided?: unknown } | undefined,
+  view: { request?: unknown; contextProvided?: unknown } | undefined
 ): tExpenseSubmission {
   if (view?.contextProvided === true) {
-    if (isPlainObject(view.request)) return ExpenseSubmissionSchema.parse(view.request);
+    if (isPlainObject(view.request)) {
+      return ExpenseSubmissionSchema.parse(view.request);
+    }
     throw new Error(
       "Per-request expense context was provided but did not reach the resolver via channel " +
-        "metadata/state.",
+        "metadata/state."
     );
   }
   throw new Error(
     "No expense submission in channel metadata. " +
-      "HTTP review must send a validated body; evals must pass clientContext.expense_submission.",
+      "HTTP review must send a validated body; evals must pass clientContext.expense_submission."
   );
 }
 
 /** True when channel metadata carries a submission (review HTTP path). */
 export function hasChannelSubmission(
-  view: { request?: unknown; contextProvided?: unknown } | undefined,
+  view: { request?: unknown; contextProvided?: unknown } | undefined
 ): boolean {
   return view?.contextProvided === true && isPlainObject(view.request);
 }
@@ -60,5 +66,11 @@ export function hasChannelSubmission(
 // The authoritative submission for this turn when provided via channel metadata.
 export const submissionState = defineState<tExpenseSubmission | null>(
   "expense-guard.submission",
-  () => null,
+  () => null
 );
+
+export function setSubmissionState(
+  submission: tExpenseSubmission | null
+): void {
+  submissionState.update(() => submission);
+}

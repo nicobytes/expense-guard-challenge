@@ -9,21 +9,25 @@ import {
 import {
   hasChannelSubmission,
   resolveExpenseSubmission,
-  submissionState,
+  setSubmissionState,
 } from "../lib/request-context.js";
 
 export default defineDynamic({
   events: {
-    "turn.started": async (_event, ctx) => {
+    "turn.started": (_event, ctx) => {
       const meta = ctx.channel.metadata;
       if (hasChannelSubmission(meta)) {
         const submission = resolveExpenseSubmission(meta);
-        submissionState.update(() => submission);
-        return defineInstructions({ markdown: buildSystemPrompt(submission, new Date()) });
+        setSubmissionState(submission);
+        return defineInstructions({
+          markdown: buildSystemPrompt(submission, new Date()),
+        });
       }
 
-      submissionState.update(() => null);
-      return defineInstructions({ markdown: buildClientContextSystemPrompt(new Date()) });
+      setSubmissionState(null);
+      return defineInstructions({
+        markdown: buildClientContextSystemPrompt(new Date()),
+      });
     },
   },
 });

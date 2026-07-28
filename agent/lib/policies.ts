@@ -1,36 +1,96 @@
 // Synthetic per-company expense policies. Each company sets its own limits, so a
 // submission must always be judged against its OWN company's rules.
-export type tPolicyRule = {
-  id: string;
+export interface tPolicyRule {
   category: string;
+  id: string;
   text: string;
-};
+}
 
-export type tCompanyPolicy = {
+export interface tCompanyPolicy {
   company_id: string;
   company_name: string;
   rules: tPolicyRule[];
-};
+}
 
 export const POLICIES: Record<string, tCompanyPolicy> = {};
 
 const acmeRules: tPolicyRule[] = [];
-acmeRules.push({ id: "MEAL-01", category: "meals", text: "Business meals are reimbursed up to $50 per attendee; an itemized receipt is required." });
-acmeRules.push({ id: "TRVL-01", category: "travel", text: "Airfare must be economy. Any single flight over $1,500 requires director approval (flag_for_review)." });
-acmeRules.push({ id: "SW-01", category: "software", text: "Software or SaaS up to $200 per month is auto-approved; above $200/month requires IT sign-off (flag_for_review)." });
-acmeRules.push({ id: "ALC-01", category: "alcohol", text: "Alcohol is not reimbursable under any circumstances (reject)." });
-POLICIES.acme = { company_id: "acme", company_name: "Acme Robotics", rules: acmeRules };
+acmeRules.push({
+  category: "meals",
+  id: "MEAL-01",
+  text: "Business meals are reimbursed up to $50 per attendee; an itemized receipt is required.",
+});
+acmeRules.push({
+  category: "travel",
+  id: "TRVL-01",
+  text: "Airfare must be economy. Any single flight over $1,500 requires director approval (flag_for_review).",
+});
+acmeRules.push({
+  category: "software",
+  id: "SW-01",
+  text: "Software or SaaS up to $200 per month is auto-approved; above $200/month requires IT sign-off (flag_for_review).",
+});
+acmeRules.push({
+  category: "alcohol",
+  id: "ALC-01",
+  text: "Alcohol is not reimbursable under any circumstances (reject).",
+});
+POLICIES.acme = {
+  company_id: "acme",
+  company_name: "Acme Robotics",
+  rules: acmeRules,
+};
 
 const globexRules: tPolicyRule[] = [];
-globexRules.push({ id: "MEAL-01", category: "meals", text: "Meals are capped at $35 per attendee." });
-globexRules.push({ id: "TRVL-01", category: "travel", text: "Any travel expense over $2,000 requires finance approval (flag_for_review)." });
-globexRules.push({ id: "SW-01", category: "software", text: "Software purchases require VP approval regardless of amount (flag_for_review)." });
-globexRules.push({ id: "ENT-01", category: "entertainment", text: "Client entertainment is reimbursed up to $300 per event." });
-POLICIES.globex = { company_id: "globex", company_name: "Globex Corporation", rules: globexRules };
+globexRules.push({
+  category: "meals",
+  id: "MEAL-01",
+  text: "Meals are capped at $35 per attendee.",
+});
+globexRules.push({
+  category: "travel",
+  id: "TRVL-01",
+  text: "Any travel expense over $2,000 requires finance approval (flag_for_review).",
+});
+globexRules.push({
+  category: "software",
+  id: "SW-01",
+  text: "Software purchases require VP approval regardless of amount (flag_for_review).",
+});
+globexRules.push({
+  category: "entertainment",
+  id: "ENT-01",
+  text: "Client entertainment is reimbursed up to $300 per event.",
+});
+POLICIES.globex = {
+  company_id: "globex",
+  company_name: "Globex Corporation",
+  rules: globexRules,
+};
 
 const initechRules: tPolicyRule[] = [];
-initechRules.push({ id: "GEN-01", category: "general", text: "Any expense over $100 requires manager review (flag_for_review)." });
-initechRules.push({ id: "MEAL-01", category: "meals", text: "Meals are reimbursed up to $25 per attendee." });
-initechRules.push({ id: "OFF-01", category: "office", text: "Office supplies up to $250 are auto-approved." });
-initechRules.push({ id: "CASH-01", category: "general", text: "Cash-only receipts with no accompanying card statement are not reimbursable (reject)." });
-POLICIES.initech = { company_id: "initech", company_name: "Initech LLC", rules: initechRules };
+initechRules.push({
+  category: "general",
+  id: "GEN-01",
+  text: "Any expense over $100 requires manager review (flag_for_review).",
+});
+initechRules.push({
+  category: "meals",
+  id: "MEAL-01",
+  text: "Meals are reimbursed up to $25 per attendee.",
+});
+initechRules.push({
+  category: "office",
+  id: "OFF-01",
+  text: "Office supplies up to $250 are auto-approved.",
+});
+initechRules.push({
+  category: "general",
+  id: "CASH-01",
+  text: "Cash-only receipts with no accompanying card statement are not reimbursable (reject).",
+});
+POLICIES.initech = {
+  company_id: "initech",
+  company_name: "Initech LLC",
+  rules: initechRules,
+};

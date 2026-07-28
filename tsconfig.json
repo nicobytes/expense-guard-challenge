@@ -13,5 +13,10 @@
     "verbatimModuleSyntax": true,
     "noEmit": true
   },
-  "include": ["agent/**/*.ts", "evals/**/*.ts", "tests/**/*.ts", "vitest.config.ts"]
+  "include": [
+    "agent/**/*.ts",
+    "evals/**/*.ts",
+    "tests/**/*.ts",
+    "vitest.config.ts"
+  ]
 }
