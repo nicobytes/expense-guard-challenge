@@ -2,14 +2,14 @@
 import { z } from "zod";
 
 export const ExpenseLineItemSchema = z.object({
-  amount: z.number().finite(),
+  amount: z.number(),
   label: z.string().min(1),
 });
 
 export const ExpenseSubmissionSchema = z.object({
   category: z.string().min(1),
   chat_id: z.string().optional(),
-  claimed_amount: z.number().finite(),
+  claimed_amount: z.number(),
   company_id: z.string().min(1),
   currency: z.string().min(1).optional(),
   label: z.string().optional(),
