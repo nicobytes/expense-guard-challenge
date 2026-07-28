@@ -1,14 +1,11 @@
 // Loads and searches a company's expense policy for the search_policy tool.
 import { POLICIES, type tCompanyPolicy, type tPolicyRule } from "./policies.js";
 
-// Memoized so repeated policy lookups within a review are cheap.
-let activePolicy: tCompanyPolicy | null = null;
-
 export function getCompanyPolicy(companyId: string): tCompanyPolicy {
-  if (activePolicy) return activePolicy;
-  const resolved = POLICIES[companyId] ?? POLICIES.acme;
-  if (!resolved) throw new Error("No default expense policy is configured.");
-  activePolicy = resolved;
+  const resolved = POLICIES[companyId];
+  if (!resolved) {
+    throw new Error(`Unknown company_id "${companyId}". No expense policy is configured.`);
+  }
   return resolved;
 }
 

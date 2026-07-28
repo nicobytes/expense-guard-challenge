@@ -32,3 +32,13 @@
 
 **Why:** Explicit per-case fixtures; no silent cross-case contamination.
 
+## 4. Policy memo leaks across companies
+
+**Found:** `activePolicy` in `policy-store.ts` is process-global. First `search_policy` wins; later companies get the wrong policy. Unknown ids also fell back to Acme (`?? POLICIES.acme`).
+
+**Confirmed:** Vitest isolation test failed (`globex` → Acme). Eval `tenant-isolation` failed expecting Globex `flag_for_review`.
+
+**Fixed:** Removed the memo and Acme fallback. `getCompanyPolicy` looks up by id and throws on unknown. Vitest + `tenant-isolation` eval pass.
+
+**Why:** Multi-tenant isolation; never apply another company’s rules by accident.
+
