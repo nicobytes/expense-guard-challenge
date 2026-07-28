@@ -72,3 +72,23 @@
 
 **Why:** Stable decisions under per-unit policy limits; evals shouldn’t reward overfitting to one receipt line.
 
+## 8. System prompt hard to maintain (string concatenation)
+
+**Found:** `build-instructions.ts` built the system prompt with cascaded `+= "...\n"` concatenations. Same content, but painful to read, edit, and review.
+
+**Confirmed:** `header` / `steps` / `rubric` / submission blocks were assembled line-by-line with escaped newlines; no unit coverage of prompt shape.
+
+**Fixed:** Rewrote builders with template literals + `stripIndent` from `common-tags` (same semantic copy, readable indented source). Added `tests/build-instructions.test.ts` (fixed date, JSON keys, section order, clientContext path).
+
+**Why:** Prompt changes should be reviewable as prose, not as string-surgery — and a small unit test guards structure without a fragile full-string snapshot.
+
+## 9. Leftover complexity after the bug fixes
+
+**Found:** Post-Bugbot (0 bugs), the code still carried challenge “ugly” leftovers and drift: commented dead paths in `policy-store`, index/`+=` string building in `formatRules`, duplicated Zod field schemas in `validate_expense`, duplicated `header`/`steps`/`rubric` assembly, and a stale `known-bug` narrative on `tenant-isolation` after fix #4.
+
+**Confirmed:** Code-simplification pass over `agent/` + `evals/`; Bugbot clean on branch changes.
+
+**Fixed:** Idiomatic `selectRules` / `formatRules`; one shared Zod field schema (+ sum refine only in `validateExpense` so the tool still returns `{ valid: false }`); `reviewInstructions()` helper; type import from `expense.schema`; tenant-isolation eval retagged as a regression guard (no `known-bug`). Deferred: tools reading `submissionState`, HTTP sum rejection, husky.
+
+**Why:** Keep behavior, make the fixed code easier to read and less likely to reintroduce stale “bugs” in docs/evals.
+

@@ -1,6 +1,6 @@
 // Builds Expense Guard's system instructions for a single review.
 import { stripIndent } from "common-tags";
-import type { tExpenseSubmission } from "./request-context.js";
+import type { tExpenseSubmission } from "./expense.schema.js";
 
 function header() {
   return stripIndent`
@@ -45,6 +45,14 @@ function rubric() {
   `;
 }
 
+function reviewInstructions(): string {
+  return stripIndent`
+    ${header()}
+    ${steps()}
+    ${rubric()}
+  `;
+}
+
 function renderSubmission(submission: tExpenseSubmission, now: Date): string {
   const payload = {
     category: submission.category,
@@ -79,9 +87,7 @@ export function buildSystemPrompt(
   return stripIndent`
     ${renderSubmission(submission, now)}
 
-    ${header()}
-    ${steps()}
-    ${rubric()}
+    ${reviewInstructions()}
   `.trim();
 }
 
@@ -90,8 +96,6 @@ export function buildClientContextSystemPrompt(now: Date): string {
   return stripIndent`
     ${clientContextHint(now)}
 
-    ${header()}
-    ${steps()}
-    ${rubric()}
+    ${reviewInstructions()}
   `.trim();
 }

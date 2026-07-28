@@ -1,8 +1,7 @@
-// Confirms module-level policy memoization leaks across companies.
-// Sequence: review Acme software (caches Acme), then Globex software in a new
-// session. Globex SW-01 always requires VP approval (flag). If activePolicy is
-// stuck on Acme, Globex gets Acme's "$200 auto-approve" rule and may approve —
-// this eval expects flag_for_review and should FAIL until the memo is fixed.
+// Regression guard: successive reviews for different companies must not share
+// policy. Sequence: Acme software, then Globex software in a new session.
+// Globex SW-01 always requires VP approval → flag_for_review. If a process-wide
+// policy memo were reintroduced and stuck on Acme, Globex could wrongly approve.
 import { defineEval } from "eve/evals";
 import { matches } from "eve/evals/expect";
 import {
@@ -35,10 +34,10 @@ const Flagged = ExpenseDecisionSchema.refine(
 
 export default defineEval({
   description:
-    "After an Acme software review, a Globex software review must use Globex policy (flag), not memoized Acme policy",
-  tags: ["expense-guard", "tenant-isolation", "known-bug"],
+    "After an Acme software review, a Globex software review must use Globex policy (flag), not a prior company's policy",
+  tags: ["expense-guard", "tenant-isolation"],
   async test(t) {
-    // Prime the process-wide activePolicy cache with Acme.
+    // First company in this process — must not leak into the next session.
     const _acmeTurn = await t.send({
       clientContext: { expense_submission: acmeSoftware },
       message: "Review the expense submission and return your decision.",
@@ -47,7 +46,7 @@ export default defineEval({
     t.didNotFail();
     t.calledTool("search_policy");
 
-    // Fresh session, same agent process — module memo should still be poisoned.
+    // Fresh session, same agent process — must still resolve Globex policy.
     const globex = t.newSession();
     const globexTurn = await globex.send({
       clientContext: { expense_submission: globexSoftware },

@@ -19,22 +19,11 @@ function selectRules(
     return policy.rules;
   }
   const q = topic.toLowerCase();
-  const hits: tPolicyRule[] = [];
-  for (const r of policy.rules) {
-    if (r.category.toLowerCase().indexOf(q) >= 0) {
-      hits.push(r);
-      continue;
-    }
-    if (r.text.toLowerCase().indexOf(q) >= 0) {
-      hits.push(r);
-    }
-  }
-  // const hits2 = policy.rules.filter((x) => x.text.toLowerCase().includes(q));
-  // if (hits2.length > 0) return hits2;
-  if (hits.length === 0) {
-    return policy.rules;
-  }
-  return hits;
+  const matchesTopic = (rule: tPolicyRule) =>
+    rule.category.toLowerCase().includes(q) ||
+    rule.text.toLowerCase().includes(q);
+  const hits = policy.rules.filter(matchesTopic);
+  return hits.length > 0 ? hits : policy.rules;
 }
 
 export function searchPolicy(
@@ -47,16 +36,7 @@ export function searchPolicy(
 }
 
 export function formatRules(rules: tPolicyRule[]): string {
-  let s = "";
-  for (let i = 0; i < rules.length; i += 1) {
-    const r = rules[i];
-    if (!r) {
-      continue;
-    }
-    s = `${s}[${r.id}] (${r.category}) ${r.text}`;
-    if (i < rules.length - 1) {
-      s += "\n";
-    }
-  }
-  return s;
+  return rules
+    .map((rule) => `[${rule.id}] (${rule.category}) ${rule.text}`)
+    .join("\n");
 }
