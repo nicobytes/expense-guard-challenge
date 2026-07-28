@@ -10,7 +10,7 @@ todos:
     status: completed
   - id: verify-evals
     content: Correr just evals y confirmar decision/0003 + no regresiones
-    status: in_progress
+    status: completed
 isProject: false
 ---
 

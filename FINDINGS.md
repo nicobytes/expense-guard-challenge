@@ -52,3 +52,23 @@
 
 **Why:** Catch total mismatches in the tool, not only in the model’s judgment.
 
+## 6. No lint/format toolchain
+
+**Found:** The repo had no linter or formatter. Style and basic JS/TS hygiene drifted file to file (`agent/`, `evals/`, `tests/`).
+
+**Confirmed:** No ESLint/Biome/Prettier config; only TypeScript + Vitest.
+
+**Fixed:** Added **Ultracite + Biome** (`biome.jsonc` extends Ultracite core + vitest). Scripts `bun run lint` / `bun run format` and `just lint` / `just format`. Autofix + residual cleanups so `agent/`, `evals/`, and `tests/` pass check. Ignores `.output`, `.eve`, `node_modules`, `.workflow-data`. No husky in this change.
+
+**Why:** Consistent style and a cheap quality gate separate from evals/dev, without rewriting challenge logic for lint’s sake.
+
+## 7. Flaky cross-company decision when policy facts are inferred
+
+**Found:** `decision/0003` (Initech meal, per-attendee limit) flip-flopped between `approve` and `flag_for_review`. The rubric said “ambiguous → flag” but never defined that policy facts (attendees, nights, units, duration) must be **explicit** on the receipt — so the model sometimes inferred headcount from line labels to fit under the limit.
+
+**Confirmed:** Same fixture: one run approved (inferred 2 attendees × $25), another flagged; `matches` failed depending on the draw. Earlier “passes” with `approve` also sometimes cited the wrong company’s meal cap.
+
+**Fixed:** Added a generic no-inference rule in `build-instructions.ts` `rubric()` (flag when the limit depends on a fact not stated on the receipt/submission; never approve on an inference that makes the claim fit). Aligned `evals/data/cases.yaml` cross-company expect/description to `flag_for_review`. No fixture-specific examples in the prompt.
+
+**Why:** Stable decisions under per-unit policy limits; evals shouldn’t reward overfitting to one receipt line.
+

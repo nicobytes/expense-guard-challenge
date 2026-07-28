@@ -15,11 +15,13 @@
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.85",
     "ai": "7.0.0-beta.178",
+    "common-tags": "^1.8.2",
     "eve": "0.11.7",
     "zod": "^4.4.3"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.3",
+    "@types/common-tags": "^1.8.4",
     "@types/node": "^26.0.0",
     "@types/supertest": "^6.0.3",
     "supertest": "^7.1.4",
