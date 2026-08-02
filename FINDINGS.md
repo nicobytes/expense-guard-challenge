@@ -92,3 +92,13 @@
 
 **Why:** Keep behavior, make the fixed code easier to read and less likely to reintroduce stale “bugs” in docs/evals.
 
+## 10. Prompt order + Opus made reviews expensive
+
+**Found:** The review agent used `anthropic/claude-opus-4.8` for a routine tool+schema review, and `buildSystemPrompt` embedded `Current date` + submission JSON in the **system** prompt (before the static role/rubric). That busts Anthropic’s cacheable `system` prefix on every request (`tools` → `system` → `messages`).
+
+**Confirmed:** [Prompt caching docs](https://platform.claude.com/docs/en/build-with-claude/prompt-caching) — keep static content stable; put per-request context in messages. Sonnet 4.5 is $3/$15 MTok vs Opus 4.8 $5/$25, with a 1,024-token cache minimum (same as Opus 4.8; better than Opus 4.6/4.5 at 4,096). Prior runs already showed ~2.5k `cacheReadTokens` from tools while system kept rewriting.
+
+**Fixed:** Model → `anthropic/claude-sonnet-4.5`. System is only `reviewInstructions()` + a static `clientContext` hint (no date/submission). HTTP review sends date + submission via `buildReviewUserMessage` in `send({ message })`. Evals keep `clientContext.expense_submission`.
+
+**Why:** Identical system text across reviews maximizes prefix cache hits; cheaper model matches the task complexity.
+

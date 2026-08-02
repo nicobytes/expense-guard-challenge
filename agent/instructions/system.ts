@@ -1,32 +1,28 @@
-// Dynamic instructions resolver. Runs at turn open. Review HTTP seeds the submission
-// via channel metadata; evals/Eve session pass it via clientContext.expense_submission
-// (no silent fixture fallback).
+// Static system prompt every turn (cache-friendly). Side-effect only: seed
+// submissionState from channel metadata when the HTTP review path provides it.
+// Evals pass the submission via clientContext.expense_submission (hint in system).
 import { defineDynamic, defineInstructions } from "eve/instructions";
-import {
-  buildClientContextSystemPrompt,
-  buildSystemPrompt,
-} from "../lib/build-instructions.js";
+import { buildSystemPrompt } from "../lib/build-instructions.js";
 import {
   hasChannelSubmission,
   resolveExpenseSubmission,
   setSubmissionState,
 } from "../lib/request-context.js";
 
+const SYSTEM_PROMPT = buildSystemPrompt();
+
 export default defineDynamic({
   events: {
     "turn.started": (_event, ctx) => {
       const meta = ctx.channel.metadata;
       if (hasChannelSubmission(meta)) {
-        const submission = resolveExpenseSubmission(meta);
-        setSubmissionState(submission);
-        return defineInstructions({
-          markdown: buildSystemPrompt(submission, new Date()),
-        });
+        setSubmissionState(resolveExpenseSubmission(meta));
+      } else {
+        setSubmissionState(null);
       }
 
-      setSubmissionState(null);
       return defineInstructions({
-        markdown: buildClientContextSystemPrompt(new Date()),
+        markdown: SYSTEM_PROMPT,
       });
     },
   },

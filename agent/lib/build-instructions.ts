@@ -1,4 +1,4 @@
-// Builds Expense Guard's system instructions for a single review.
+// Builds Expense Guard prompts: static system instructions + per-request user message.
 import { stripIndent } from "common-tags";
 import type { tExpenseSubmission } from "./expense.schema.js";
 
@@ -45,7 +45,8 @@ function rubric() {
   `;
 }
 
-function reviewInstructions(): string {
+/** Role, steps, and rubric — identical across every review (cache-friendly system prefix). */
+export function reviewInstructions(): string {
   return stripIndent`
     ${header()}
     ${steps()}
@@ -53,7 +54,32 @@ function reviewInstructions(): string {
   `;
 }
 
-function renderSubmission(submission: tExpenseSubmission, now: Date): string {
+/**
+ * Static eval/session hint — no Date, no per-request fields.
+ * HTTP review embeds the submission in the user message instead.
+ */
+export function clientContextHint(): string {
+  return stripIndent`
+    When the user message does not embed a submission, use client context
+    \`expense_submission\` (company_id, category, claimed_amount, receipt, etc.)
+    as the only submission under review — do not invent fields.
+  `;
+}
+
+/** Full static system prompt (build-time / every turn, never per-submission). */
+export function buildSystemPrompt(): string {
+  return stripIndent`
+    ${reviewInstructions()}
+
+    ${clientContextHint()}
+  `.trim();
+}
+
+/** Per-request user turn for HTTP review — date + submission live here, not in system. */
+export function buildReviewUserMessage(
+  submission: tExpenseSubmission,
+  now: Date
+): string {
   const payload = {
     category: submission.category,
     claimed_amount: submission.claimed_amount,
@@ -67,35 +93,7 @@ function renderSubmission(submission: tExpenseSubmission, now: Date): string {
     Current date: ${now.toISOString()}
     Submission under review:
     ${JSON.stringify(payload, null, 2)}
-  `;
-}
 
-function clientContextHint(now: Date): string {
-  return stripIndent`
-    Current date: ${now.toISOString()}
-    The expense submission for this turn is in client context under
-    \`expense_submission\` (company_id, category, claimed_amount, receipt, etc.).
-    Use that object as the only submission under review — do not invent fields.
-  `;
-}
-
-/** System prompt when channel metadata carries the submission (HTTP review). */
-export function buildSystemPrompt(
-  submission: tExpenseSubmission,
-  now: Date
-): string {
-  return stripIndent`
-    ${renderSubmission(submission, now)}
-
-    ${reviewInstructions()}
-  `.trim();
-}
-
-/** System prompt for Eve session / evals: submission arrives via clientContext. */
-export function buildClientContextSystemPrompt(now: Date): string {
-  return stripIndent`
-    ${clientContextHint(now)}
-
-    ${reviewInstructions()}
+    Review this expense submission and return your decision.
   `.trim();
 }

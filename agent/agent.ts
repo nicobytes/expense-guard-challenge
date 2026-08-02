@@ -10,7 +10,7 @@ import { defineAgent } from "eve";
 import { ExpenseDecisionSchema } from "./lib/expense.schema.js";
 
 export default defineAgent({
-  model: "anthropic/claude-opus-4.8",
+  model: "anthropic/claude-sonnet-4.5",
   // Dated Anthropic ids aren't in the Gateway model catalog, so pin the window to skip
   // the lookup diagnostic.
   modelContextWindowTokens: 200_000,

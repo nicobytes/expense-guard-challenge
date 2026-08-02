@@ -10,6 +10,7 @@ import {
   type Session,
 } from "eve/channels";
 import { z } from "zod";
+import { buildReviewUserMessage } from "../lib/build-instructions.js";
 import {
   ExpenseDecisionSchema,
   ExpenseSubmissionSchema,
@@ -120,7 +121,7 @@ export default defineChannel<
       const view = buildRequestView(parsed.data);
       const session = await send(
         {
-          message: "Review the expense submission and return your decision.",
+          message: buildReviewUserMessage(parsed.data, new Date()),
           outputSchema,
         },
         {

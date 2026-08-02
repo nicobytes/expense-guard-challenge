@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
-  buildClientContextSystemPrompt,
+  buildReviewUserMessage,
   buildSystemPrompt,
+  reviewInstructions,
 } from "../agent/lib/build-instructions.js";
 import type { tExpenseSubmission } from "../agent/lib/expense.schema.js";
 
 const FIXED_NOW = new Date("2026-01-15T12:00:00.000Z");
+const ISO_DATE_PREFIX = /\d{4}-\d{2}-\d{2}T/;
 
 const submission: tExpenseSubmission = {
   category: "meals",
@@ -17,31 +19,43 @@ const submission: tExpenseSubmission = {
 };
 
 describe("buildSystemPrompt", () => {
-  it("puts submission before role and includes rubric", () => {
-    const prompt = buildSystemPrompt(submission, FIXED_NOW);
-
-    expect(prompt).toContain("Current date: 2026-01-15T12:00:00.000Z");
-    expect(prompt).toContain('"company_id": "acme"');
-    expect(prompt).toContain('"claimed_amount": 42');
+  it("is static role/rubric plus clientContext hint with no per-request payload", () => {
+    const prompt = buildSystemPrompt();
 
     expect(prompt).toContain("You are Expense Guard");
     expect(prompt).toContain("How to review a submission:");
     expect(prompt).toContain("Decision rubric:");
     expect(prompt).toContain("infer that fact");
     expect(prompt).toContain("flag_for_review");
+    expect(prompt).toContain("expense_submission");
 
-    const dateAt = prompt.indexOf("Current date:");
-    const roleAt = prompt.indexOf("You are Expense Guard");
-    expect(dateAt).toBeGreaterThanOrEqual(0);
-    expect(roleAt).toBeGreaterThan(dateAt);
+    expect(prompt).not.toContain("Current date:");
+    expect(prompt).not.toContain("Lunch at Cafe");
+    expect(prompt).not.toContain('"company_id": "acme"');
+    expect(prompt).not.toContain('"claimed_amount": 42');
   });
 });
 
-describe("buildClientContextSystemPrompt", () => {
-  it("points at expense_submission without embedding a receipt", () => {
-    const prompt = buildClientContextSystemPrompt(FIXED_NOW);
-    expect(prompt).toContain("expense_submission");
-    expect(prompt).toContain("You are Expense Guard");
-    expect(prompt).not.toContain("Lunch at Cafe");
+describe("reviewInstructions", () => {
+  it("has no dates or submission fields", () => {
+    const text = reviewInstructions();
+    expect(text).toContain("You are Expense Guard");
+    expect(text).not.toMatch(ISO_DATE_PREFIX);
+    expect(text).not.toContain("expense_submission");
+  });
+});
+
+describe("buildReviewUserMessage", () => {
+  it("embeds date, submission JSON, and CTA", () => {
+    const message = buildReviewUserMessage(submission, FIXED_NOW);
+
+    expect(message).toContain("Current date: 2026-01-15T12:00:00.000Z");
+    expect(message).toContain('"company_id": "acme"');
+    expect(message).toContain('"claimed_amount": 42');
+    expect(message).toContain("Lunch at Cafe");
+    expect(message).toContain(
+      "Review this expense submission and return your decision."
+    );
+    expect(message).not.toContain("You are Expense Guard");
   });
 });
